@@ -2,7 +2,7 @@
 
 namespace glotstats;
 
-function parse( $locale = false, $directory = false, $view ) {
+function parse( $locale = false, $directory = false, $view, $stats ) {
 
 	if ( empty( $locale ) || empty( $directory ) ) {
 		return false;
@@ -22,6 +22,7 @@ function parse( $locale = false, $directory = false, $view ) {
 	foreach ( $xml as $item ) {
 
 		$input[] = array(
+			'directory'         => $directory,
 			'title'             => (string) $item->th->a,
 			'installs'          => (int) $item->th['data-sort-value'],
 			'link'              => (string) $item->th->a['href'],
@@ -39,16 +40,22 @@ function parse( $locale = false, $directory = false, $view ) {
 	}
 
 	if ( 'top' === $view ) {
-		render_top( $input );
+		render_top( $input, $directory, $stats );
 	} elseif ( 'tasks' === $view ) {
-		render_tasks( $input );
+		render_tasks( $input, $stats );
 	}
 
 }
 
-function render_top( $input ) {
+function render_top( $input, $directory, $stats ) {
 	$base_url = 'https://translate.wordpress.org';
 	$count    = count( $input );
+
+	if ($directory == 'themes') {
+		$directory = __('Theme', 'glotpress-stats');
+	} else {
+		$directory = __('Plugin', 'glotpress-stats');
+	}
 
 	?>
 	<div class="stats-table">
@@ -57,9 +64,10 @@ function render_top( $input ) {
 
 	<tr>
 	<th style="width: 60px;">#</th>
-	<th>Name</th>
-	<th>Installs</th>
-	<th>Untranslated</th>
+	<?php /* translators: Plugin/Theme */ ?>
+	<th><?php echo sprintf(__('%s name', 'glotpress-stats'), $directory); ?></th>
+	<th><?php _e('Installs', 'glotpress-stats'); ?></th>
+	<th><?php _e('Untranslated', 'glotpress-stats'); ?></th>
 	</tr>
 	</thead>
 	<tbody>
@@ -74,8 +82,7 @@ function render_top( $input ) {
 		$row = $input[ $i ];
 
 		if ( 0 === $row['untranslated'] ) {
-			if ( $clean ) {
-				$top   = $i+1;
+			if ( $clean ) {				
 			}
 		} else {
 
@@ -95,14 +102,32 @@ function render_top( $input ) {
 	}
 
 	echo '</tbody></table><div>';
-	echo 'Top'. $top . ' :100:<br>';
-	if ( $printed_tasks > 0){
-		echo $printed_tasks . ' projects remaining (' . $untranslated . ' strings) to complete Top200 <br>';
+		$completed = $top - $printed_tasks;
+		$percent_completed = round(($completed * 100) / $top,2);
+		$percent_remaining = 100 - $percent_completed;
+
+		if ( $printed_tasks > 0){
+		echo '<h2>' . __('Overview', 'glotpress-stats') . '</h2>';
+		/* translators: 1. Remaining projects, 2. Remaining strings, 3. Top plugins/themes   */
+		echo '<p style="font-size: 1.25em; color: #ff9800">' . sprintf(__('Currently, there are %1$s projects remaining (%2$s strings) to complete Top %3$s', 'glotpress-stats'), $printed_tasks, $untranslated, $top) . '</p>';		
+	} else {
+		echo '<h2>' . __('Overview', 'glotpress-stats') . '</h2>';		
+		echo '<p style="font-size: 1.25em; color: #4caf50">' . __('Yay! All the projects have been completed!', 'glotpress-stats') . '</p>';
 	}
+		?>
+	
+	<h2><?php _e('Detailed Stats', 'glotpress-stats') ?></h2>
+	<ul>
+		<li>🔝 <strong><?php echo __('Projects in the Top:', 'glotpress-stats') . '</strong> '. $top; ?></li>
+		<li>✅ <strong><?php echo __('Projects completed:', 'glotpress-stats') . '</strong> ' . $completed . ' (' . $percent_completed . '&nbsp;%)'; ?></li>
+		<li>🔄 <strong><?php echo __('Projects remaining:', 'glotpress-stats') . '</strong> ' . $printed_tasks . ' (' . $percent_remaining . '&nbsp;%)'; ?></li>
+		<li>✏ <strong><?php echo __('Strings remaining:', 'glotpress-stats') . '</strong> ' . $untranslated; ?></li>
+	</ul>
+	<?php	
 }
 
 
-function render_tasks( $input ) {
+function render_tasks( $input, $stats ) {
 	$base_url = 'https://translate.wordpress.org';
 	$count    = count( $input );
 	echo '<pre>';
@@ -112,6 +137,19 @@ function render_tasks( $input ) {
 	$untranslated  = 0;
 	$printed_tasks = 0;
 
+	if ($printed_tasks > 0) {
+		$detailed_stats = '<h2>' . __('Overview', 'glotpress-stats') . '</h2>';
+		/* translators: 1. Remaining projects, 2. Remaining strings, 3. Top plugins/themes   */
+		$detailed_stats .=  '<p style="font-size: 1.25em; color: #ff9800">' . sprintf(__('There are %1$s strings pending translation for these %2$s projects.', 'glotpress-stats'), $untranslated, $printed_tasks) . '</p>';
+	} else {
+		$detailed_stats =  '<h2>' . __('Overview', 'glotpress-stats') . '</h2>';
+		$detailed_stats .= '<p style="font-size: 1.25em; color: #4caf50">' . __('Yay! All the projects have been completed!', 'glotpress-stats') . '</p>';
+	}
+
+	if ($stats == 'top' || $stats == NULL) {
+		echo $detailed_stats;
+	}
+
 	for ( $i = 0; $i < $count; $i++ ) {
 		$row = $input[ $i ];
 
@@ -120,23 +158,25 @@ function render_tasks( $input ) {
 				$top   = $i + 1;
 			}
 		} else {
-
-			$untranslated += $row['untranslated'];
+			
 			if ( $clean ) {
 				$clean = false;	
 			}
 			if ( $printed_tasks < 3 ) {
-				echo '*' . $row['title'] . '* (' . number_format ( $row['installs'], 0, '', '.' ) . '+ instalaciones)' . "\n";
-				echo $row['untranslated'] . ' cadenas sin traducir' . "\n";
+				/* translators: 1. Active installations */
+				echo '*' . $row['title'] . '* (' . sprintf(__('%s+ active installations)', 'glotpress-stats'), number_format($row['installs'], 0, '', '.') ) . "\n";				
+				echo $row['untranslated'] . ' ' . __('untranslated strings', 'glotpress-stats') . "\n";
 				echo $base_url . $row['untranslated_link'] . "\n\n";
 				$printed_tasks++;
+				$untranslated += $row['untranslated'];
 			}
 		}
 	}
 
 	echo '</pre>';
-	echo 'Top' . $top . ' :100:<br>';
-	if ( $printed_tasks > 0){
-		echo $printed_tasks . ' projects remaining (' . $untranslated . ' strings) to complete Top200 <br>';
+
+	if ($stats == 'bottom') {
+		echo $detailed_stats;
 	}
+	
 }

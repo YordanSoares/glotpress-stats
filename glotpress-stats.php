@@ -5,7 +5,7 @@
  * Version: 0.2
  * Author: Nilo Velez
  * Author URI: https://www.nilovelez.com
- * Text Domain: glotstats
+ * Text Domain: glotpress-stats
  * License: GPLv2 or later
  * License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -19,7 +19,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-
 add_action(
 	'init',
 	function () {
@@ -32,12 +31,17 @@ add_action(
 		 *  - top: shows the unstranslatede projects from the top 200 of the selected directory
 		 *  - stats: shows ready to copy Slack code with the info of the next 3 projects to do
 		 */
+
+		// Load plugin text domain
+		load_plugin_textdomain('glotpress-stats', FALSE,	dirname(plugin_basename(__FILE__)) . '/languages');
+		
 		function shortcode_callback( $atts ) {
 			$a = shortcode_atts(
 				array(
 					'locale'    => 'es',
 					'directory' => 'plugins',
 					'view'      => 'top',
+					'stats'	    => 'top',
 				),
 				$atts
 			);
@@ -49,7 +53,7 @@ add_action(
 			}
 			ob_start();
 			require_once plugin_dir_path( __FILE__ ) . './parser.php';
-			parse( $a['locale'], $a['directory'], $a['view'] );
+			parse( $a['locale'], $a['directory'], $a['view'], $a['stats'] );
 			return ob_get_clean();
 		}
 		add_shortcode( 'glotstats', 'glotstats\shortcode_callback' );
