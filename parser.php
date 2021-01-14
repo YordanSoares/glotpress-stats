@@ -2,7 +2,7 @@
 
 namespace glotstats;
 
-function parse( $locale = false, $directory = false, $view, $stats ) {
+function parse( $locale = false, $directory = false, $view ) {
 
 	if ( empty( $locale ) || empty( $directory ) ) {
 		return false;
@@ -40,14 +40,14 @@ function parse( $locale = false, $directory = false, $view, $stats ) {
 	}
 
 	if ( 'top' === $view ) {
-		render_top( $input, $directory, $stats );
+		render_top( $input, $directory );
 	} elseif ( 'tasks' === $view ) {
-		render_tasks( $input, $stats );
+		render_tasks( $input );
 	}
 
 }
 
-function render_top( $input, $directory, $stats ) {
+function render_top( $input, $directory ) {
 	$base_url = 'https://translate.wordpress.org';
 	$count    = count( $input );
 
@@ -127,7 +127,7 @@ function render_top( $input, $directory, $stats ) {
 }
 
 
-function render_tasks( $input, $stats ) {
+function render_tasks( $input ) {
 	$base_url = 'https://translate.wordpress.org';
 	$count    = count( $input );
 	echo '<pre>';
@@ -136,19 +136,6 @@ function render_tasks( $input, $stats ) {
 	$top           = $count;
 	$untranslated  = 0;
 	$printed_tasks = 0;
-
-	if ($printed_tasks > 0) {
-		$detailed_stats = '<h2>' . __('Overview', 'glotpress-stats') . '</h2>';
-		/* translators: 1. Remaining projects, 2. Remaining strings, 3. Top plugins/themes   */
-		$detailed_stats .=  '<p style="font-size: 1.25em; color: #ff9800">' . sprintf(__('There are %1$s strings pending translation for these %2$s projects.', 'glotpress-stats'), $untranslated, $printed_tasks) . '</p>';
-	} else {
-		$detailed_stats =  '<h2>' . __('Overview', 'glotpress-stats') . '</h2>';
-		$detailed_stats .= '<p style="font-size: 1.25em; color: #4caf50">' . __('Yay! All the projects have been completed!', 'glotpress-stats') . '</p>';
-	}
-
-	if ($stats == 'top' || $stats == NULL) {
-		echo $detailed_stats;
-	}
 
 	for ( $i = 0; $i < $count; $i++ ) {
 		$row = $input[ $i ];
@@ -175,8 +162,12 @@ function render_tasks( $input, $stats ) {
 
 	echo '</pre>';
 
-	if ($stats == 'bottom') {
-		echo $detailed_stats;
+	if ($printed_tasks > 0) {
+		echo '<h2>' . __('Overview', 'glotpress-stats') . '</h2>';
+		/* translators: 1. Remaining projects, 2. Remaining strings, 3. Top plugins/themes   */
+		echo '<p style="font-size: 1.25em; color: #ff9800">' . sprintf(__('There are %1$s strings pending translation for these %2$s projects.', 'glotpress-stats'), $untranslated, $printed_tasks) . '</p>';		
+	} else {
+		echo '<h2>' . __('Overview', 'glotpress-stats') . '</h2>';
+		echo '<p style="font-size: 1.25em; color: #4caf50">' . __('Yay! All the projects have been completed!', 'glotpress-stats') . '</p>';
 	}
-	
 }

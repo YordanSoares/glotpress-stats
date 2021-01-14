@@ -2,7 +2,7 @@
 /**
  * Plugin Name: GlotPress Stats
  * Description: Shortcode for displaying a polyglot-oriented digest of a locale
- * Version: 0.2
+ * Version: 0.4
  * Author: Nilo Velez
  * Author URI: https://www.nilovelez.com
  * Text Domain: glotpress-stats
@@ -33,15 +33,26 @@ add_action(
 		 */
 
 		// Load plugin text domain
-		load_plugin_textdomain('glotpress-stats', FALSE,	dirname(plugin_basename(__FILE__)) . '/languages');
+		load_plugin_textdomain( 'glotpress-stats', FALSE,	dirname(plugin_basename(__FILE__)) . '/languages' );
+
+		// Register Styles and Scripts
+		wp_register_style( 'datatable', plugin_dir_url(__FILE__) . 'vendor/DataTables/datatables.min.css', '', '1.10.21' );
+		wp_register_script( 'jquery-full', plugin_dir_url(__FILE__) . 'assets/js/jquery-3.5.1.min.js', '', '3.5.1', false );
+		wp_register_script( 'datatables', plugin_dir_url( __FILE__ ) . 'vendor/DataTables/datatables.min.js', '', '1.10.21', false );
+		wp_register_script( 'glotpress-stats', plugin_dir_url(__FILE__) . 'assets/js/glotpress-stats.js', '', '0.3', false );
 		
-		function shortcode_callback( $atts ) {
+		function shortcode_callback( $atts ) {			
+			// Enqueue Styles and Scripts
+			wp_enqueue_style('datatable');
+			wp_enqueue_script('jquery-full');
+			wp_enqueue_script('datatables');
+			wp_enqueue_script('glotpress-stats');
+
 			$a = shortcode_atts(
 				array(
 					'locale'    => 'es',
 					'directory' => 'plugins',
 					'view'      => 'top',
-					'stats'	    => 'top',
 				),
 				$atts
 			);
@@ -53,9 +64,11 @@ add_action(
 			}
 			ob_start();
 			require_once plugin_dir_path( __FILE__ ) . './parser.php';
-			parse( $a['locale'], $a['directory'], $a['view'], $a['stats'] );
+			parse( $a['locale'], $a['directory'], $a['view'] );
 			return ob_get_clean();
 		}
 		add_shortcode( 'glotstats', 'glotstats\shortcode_callback' );
 	}
 );
+
+
